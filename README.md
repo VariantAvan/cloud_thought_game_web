@@ -17,6 +17,16 @@ Edit [`content/credits.md`](content/credits.md) to change what the Credits butto
 
 Running [`scripts/backup.ps1`](scripts/backup.ps1) before each GitHub push auto-increments **Version No.** in the credits file (and `package.json`).
 
+## Play offline (double-click)
+
+Build a single HTML file you can open directly in the browser — no server required:
+
+```bash
+npm run build:standalone
+```
+
+Then double-click **`play.html`** in the project folder. Regenerate after code changes (`play.html` is not updated during `npm run dev`).
+
 ## Build
 
 ```bash

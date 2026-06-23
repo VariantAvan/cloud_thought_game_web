@@ -1,3 +1,4 @@
+import { assetPath } from '../assets/assetPath';
 import { GRASS_BOTTOM, GRASS_TOP, LAYOUT, SKY_BOTTOM, SKY_TOP } from '../game/constants';
 import type { Point, Size } from '../types';
 import { drawPerson, drawTree } from './drawPlaceholders';
@@ -52,7 +53,7 @@ export class SceneRenderer {
     const scale = Math.min(size.width, size.height) * LAYOUT.treeScale;
     const x = size.width * LAYOUT.treeX;
     const baseY = size.height * LAYOUT.treeBaseY;
-    const img = this.assets.getImage('/assets/environment/tree.png');
+    const img = this.assets.getImage(assetPath('assets/environment/tree.png'));
 
     if (img) {
       const aspect = img.width / img.height;
@@ -68,7 +69,7 @@ export class SceneRenderer {
     const scale = Math.min(size.width, size.height) * LAYOUT.personScale;
     const x = size.width * LAYOUT.personX;
     const y = size.height * LAYOUT.personY;
-    const img = this.assets.getImage('/assets/characters/person.png');
+    const img = this.assets.getImage(assetPath('assets/characters/person.png'));
 
     if (img) {
       const aspect = img.width / img.height;

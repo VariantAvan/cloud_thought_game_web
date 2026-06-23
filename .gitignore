@@ -1,5 +1,7 @@
 node_modules/
 dist/
+standalone/
+play.html
 .env
 .env.*
 !.env.example

@@ -1,3 +1,4 @@
+import { assetPath } from '../assets/assetPath';
 import {
   ANIMAL_DISPLAY_DURATION,
   ANIMAL_SCALE_DURATION,
@@ -159,7 +160,7 @@ export class CloudManager {
 
   private renderCloud(ctx: CanvasRenderingContext2D, cloud: Cloud): void {
     const wobble = Math.sin(cloud.wobblePhase) * 3;
-    const path = `/assets/clouds/cloud-${cloud.variant}.png`;
+    const path = assetPath(`assets/clouds/cloud-${cloud.variant}.png`);
     const img = this.assets.getImage(path);
     const scale = Math.min(this.width, this.height) * 0.12;
 
