@@ -1,7 +1,8 @@
 import { assetPath } from '../assets/assetPath';
-import { GRASS_BOTTOM, GRASS_TOP, LAYOUT, SKY_BOTTOM, SKY_TOP } from '../game/constants';
+import { GRASS_BOTTOM, GRASS_TOP, LAYOUT, SKY_BOTTOM, SKY_TOP, treeGroundY } from '../game/constants';
 import type { Point, Size } from '../types';
 import { drawPerson, drawTree } from './drawPlaceholders';
+import { getContentBottomFraction } from './imageBounds';
 import type { AssetLoader } from '../systems/AssetLoader';
 
 export class SceneRenderer {
@@ -50,18 +51,20 @@ export class SceneRenderer {
   }
 
   private drawTree(ctx: CanvasRenderingContext2D, size: Size): void {
-    const scale = Math.min(size.width, size.height) * LAYOUT.treeScale;
     const x = size.width * LAYOUT.treeX;
-    const baseY = size.height * LAYOUT.treeBaseY;
+    const groundY = treeGroundY(size.height);
     const img = this.assets.getImage(assetPath('assets/environment/tree.png'));
 
     if (img) {
-      const aspect = img.width / img.height;
-      const h = scale;
-      const w = h * aspect;
-      ctx.drawImage(img, x - w / 2, baseY - h, w, h);
+      const w = size.width * LAYOUT.treeScreenWidth;
+      const h = w / (img.width / img.height);
+      const bottomFraction = getContentBottomFraction(img);
+      const drawY = groundY - h * bottomFraction;
+      ctx.drawImage(img, x - w / 2, drawY, w, h);
     } else {
-      drawTree(ctx, x, baseY, scale);
+      const w = size.width * LAYOUT.treeScreenWidth;
+      const h = w / 0.67;
+      drawTree(ctx, x, groundY, h);
     }
   }
 

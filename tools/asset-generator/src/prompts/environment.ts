@@ -2,19 +2,35 @@ import { buildPrompt } from '../style-guide.js';
 
 export function treePrompt(): string {
   return buildPrompt(
-    'Single oak tree side view with brown trunk and green leafy canopy, game environment sprite, centered.',
+    [
+      'Single oak tree side view, brown trunk and lush green leafy canopy,',
+      'game environment sprite, tall vertical composition with trunk base at the bottom of the image,',
+      'tree only — no grass, no meadow, no person, no scenery;',
+      'solid flat bright chroma blue screen background (#00B4FF), evenly lit with no shadows on the backdrop.',
+    ].join(' '),
   );
 }
 
-export function personPrompt(): string {
-  return buildPrompt(
-    'A relaxed person lying on grass under a tree, side view, head visible and facing slightly upward, casual clothes, game character sprite.',
-  );
+/** Iterative edits on an existing tree draft (image-to-image via Nano Banana). */
+export function treeRefinePrompt(notes: string): string {
+  const base = [
+    'Refine this game tree sprite for a children\'s meadow scene.',
+    'Keep side view with trunk base at the bottom, soft watercolor style, gentle pastel greens and browns.',
+    'Keep a solid flat chroma blue screen (#00B4FF) or plain white background — no scenery.',
+    'Do not add grass, people, text, or watermarks.',
+  ].join(' ');
+
+  return notes.trim() ? `${base} ${notes.trim()}` : base;
 }
 
 export function cloudPrompt(index: number): string {
   return buildPrompt(
-    `Fluffy white cartoon cloud variant ${index + 1}, soft edges, isolated on transparent background, game sprite.`,
+    [
+      `Single isolated fluffy white cartoon cloud only, variant ${index + 1}, soft rounded edges,`,
+      'centered in frame, game sky sprite — cloud shape only,',
+      'no ground, no hills, no trees, no grass, no flowers, no meadow, no landscape, no scenery,',
+      'solid flat bright chroma blue screen background (#00B4FF), evenly lit with no shadows on the backdrop.',
+    ].join(' '),
   );
 }
 

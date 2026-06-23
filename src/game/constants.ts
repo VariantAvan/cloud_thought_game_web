@@ -18,8 +18,10 @@ export const BUBBLE_FADE_DURATION = 2;
 export const LAYOUT = {
   grassTop: 0.75,
   treeX: 0.72,
-  treeBaseY: 0.75,
-  treeScale: 0.28,
+  /** Fraction into the grass band (from its top edge) where the tree trunk meets ground. */
+  treeGrassInset: 0.05,
+  /** Tree width as a fraction of canvas width (~25% of the screen on landscape). */
+  treeScreenWidth: 0.25,
   personX: 0.38,
   personY: 0.84,
   personScale: 0.22,
@@ -27,6 +29,12 @@ export const LAYOUT = {
   skyCloudMaxY: 0.45,
   dogScale: 0.08,
 } as const;
+
+/** Canvas Y where grounded sprites (tree trunk base) should sit. */
+export function treeGroundY(canvasHeight: number): number {
+  const grassBand = 1 - LAYOUT.grassTop;
+  return canvasHeight * (LAYOUT.grassTop + LAYOUT.treeGrassInset * grassBand);
+}
 
 // Dog behavior timings (seconds)
 export const DOG_SIT_DURATION = 2.5;

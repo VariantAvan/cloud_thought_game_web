@@ -4,11 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate": "tsx src/cli.ts"
+    "generate": "tsx src/cli.ts",
+    "remove-bg": "tsx src/remove-bg.ts",
+    "cloud-loop": "tsx src/cloud-loop.ts"
   },
   "dependencies": {
     "@google/genai": "^1.0.0",
     "dotenv": "^16.4.7",
+    "gif-encoder-2": "^1.0.5",
     "sharp": "^0.33.5"
   },
   "devDependencies": {

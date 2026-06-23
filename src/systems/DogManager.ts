@@ -9,6 +9,7 @@ import {
   DOG_SIT_AT_TARGET_DURATION,
   DOG_SIT_DURATION,
   LAYOUT,
+  treeGroundY,
 } from '../game/constants';
 import { drawDog } from '../rendering/drawPlaceholders';
 import type { DogPose, Point } from '../types';
@@ -107,7 +108,7 @@ export class DogManager {
       },
       tree: {
         x: this.width * LAYOUT.treeX - min * 0.06,
-        y: this.height * LAYOUT.treeBaseY + min * 0.012,
+        y: treeGroundY(this.height),
       },
       circleCenter: {
         x: this.width * 0.5,

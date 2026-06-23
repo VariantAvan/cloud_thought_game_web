@@ -6,6 +6,8 @@ play.html
 .env.*
 !.env.example
 tools/asset-generator/staging/
+tools/asset-generator/approved/
+tools/asset-generator/archive/
 tools/asset-generator/.env
 *.log
 .DS_Store

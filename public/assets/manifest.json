@@ -1,3 +1,16 @@
 {
-  "assets": []
+  "assets": [
+    {
+      "path": "/assets/characters/person.png",
+      "width": 1456,
+      "height": 720,
+      "category": "characters"
+    },
+    {
+      "path": "/assets/environment/tree.png",
+      "width": 848,
+      "height": 1264,
+      "category": "environment"
+    }
+  ]
 }

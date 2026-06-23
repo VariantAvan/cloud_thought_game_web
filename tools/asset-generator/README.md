@@ -35,13 +35,42 @@ npm run generate -- --category clouds --count 5
 npm run generate -- --category person
 npm run generate -- --category tree
 
+# Person workflow (hero asset — uses Nano Banana Pro by default)
+npm run generate -- --category person --variants 3 --stage-only
+npm run generate -- --category person --refine tools/asset-generator/staging/person-....png --notes "lighter shirt, clearer face"
+npm run remove-bg -- tools/asset-generator/staging/person-....png
+npm run remove-bg -- --dir tools/asset-generator/staging --key blue
+npm run generate -- --promote tools/asset-generator/staging/person-....-cutout.png --dest public/assets/characters/person.png
+
 # Promote a staged file manually
 npm run generate -- --promote tools/asset-generator/staging/cat.png --dest public/assets/animals/cat.png
 ```
 
-Generated files land in `staging/` first, then are resized and copied to `public/assets/`. The game `manifest.json` is updated automatically.
+Generated files land in `staging/` for review. Promoted assets are copied to `public/assets/` (game) and `approved/` (archive). Old drafts go in `archive/`.
+
+## Remove background (chroma key)
+
+Generated sprites use a **chroma blue** (`#00B4FF`) or **white** backdrop instead of transparency (models handle solid colors more reliably). Run the offline post-processor before promoting:
+
+```bash
+# From repo root — blue screen (default)
+npm run remove-bg -- tools/asset-generator/staging/person-....png
+
+# White background
+npm run remove-bg -- tools/asset-generator/staging/person-....png --key white
+
+# Batch all staging PNGs
+npm run remove-bg -- --dir tools/asset-generator/staging
+
+# Tune edge softness if needed
+npm run remove-bg -- staging/person.png --tolerance 80 --softness 48
+```
+
+Outputs are saved alongside the source with a `-cutout` suffix (e.g. `person-1-....-cutout.png`). Use `--in-place` to overwrite the original, or `--out path.png` for a single file.
+
+Run from `tools/asset-generator/` with `npx tsx src/remove-bg.ts ...` if npm workspace flag passing is awkward on Windows.
 
 ## Security
 
-- Never commit `.env` or `staging/`.
+- Never commit `.env`, `staging/`, `approved/`, or `archive/`.
 - Never add `GEMINI_API_KEY` to hosting provider environment variables.

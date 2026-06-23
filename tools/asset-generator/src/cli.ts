@@ -2,21 +2,22 @@
 import { mkdir, copyFile } from 'node:fs/promises';
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { generateImage, DEFAULT_MODEL, BATCH_MODEL } from './gemini-client.js';
+import { generateImage, refineImage, DEFAULT_MODEL, BATCH_MODEL } from './gemini-client.js';
 import { savePng, promoteFile } from './postprocess.js';
 import { updateManifest, toWebPath } from './manifest.js';
+import { archiveApprovedAsset, STAGING } from './paths.js';
 import {
   treePrompt,
-  personPrompt,
+  treeRefinePrompt,
   cloudPrompt,
   grassPrompt,
   thoughtBubblePrompt,
 } from './prompts/environment.js';
+import { personPrompt, personRefinePrompt } from './prompts/characters.js';
 import { ANIMALS, animalPrompt, getAnimalFileName } from './prompts/animals.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../../..');
-const STAGING = resolve(__dirname, '../staging');
 const ASSETS = resolve(ROOT, 'public/assets');
 
 interface CliArgs {
@@ -27,6 +28,10 @@ interface CliArgs {
   model?: string;
   promote?: string;
   dest?: string;
+  refine?: string;
+  notes?: string;
+  stageOnly?: boolean;
+  variants?: number;
   help?: boolean;
 }
 
@@ -41,6 +46,10 @@ function parseArgs(argv: string[]): CliArgs {
     else if (a === '--model' || a === '-m') args.model = argv[++i];
     else if (a === '--promote') args.promote = argv[++i];
     else if (a === '--dest') args.dest = argv[++i];
+    else if (a === '--refine') args.refine = argv[++i];
+    else if (a === '--notes') args.notes = argv[++i];
+    else if (a === '--stage-only') args.stageOnly = true;
+    else if (a === '--variants') args.variants = parseInt(argv[++i], 10);
     else if (a === '--help' || a === '-h') args.help = true;
   }
   return args;
@@ -62,13 +71,21 @@ Options:
   --all            Generate all animals (A-Z)
   --count, -n      Cloud count (default 5)
   --model, -m      Model id (default: ${DEFAULT_MODEL})
+  --refine         Refine an existing PNG (image-to-image edit)
+  --notes          Extra refinement instructions (with --refine)
+  --stage-only     Save to staging/ only; do not publish to public/assets
+  --variants       Generate N drafts to staging (person, tree categories)
   --promote        Copy staged PNG into public/assets
   --dest           Destination path for --promote
 
 Examples:
+  npm run generate -- --category person --model gemini-3-pro-image
+  npm run generate -- --category person --variants 3 --stage-only
+  npm run generate -- --category tree --variants 3 --stage-only
+  npm run generate -- --category person --refine staging/person-....png --notes "softer colors"
   npm run generate -- --category animals --letter c
   npm run generate -- --category animals --all --model ${BATCH_MODEL}
-  npm run generate -- --category clouds --count 5
+  npm run generate -- --category clouds --count 6 --stage-only
   npm run generate -- --promote staging/cat.png --dest public/assets/animals/cat.png
 `);
 }
@@ -77,9 +94,12 @@ async function generateToStaging(
   name: string,
   prompt: string,
   model: string,
+  sourcePath?: string,
 ): Promise<string> {
   console.log(`Generating ${name}...`);
-  const buffer = await generateImage(prompt, model);
+  const buffer = sourcePath
+    ? await refineImage(sourcePath, prompt, model)
+    : await generateImage(prompt, model);
   await mkdir(STAGING, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const out = resolve(STAGING, `${name}-${stamp}.png`);
@@ -113,7 +133,28 @@ async function runCategory(args: CliArgs): Promise<void> {
   const category = args.category!;
 
   switch (category) {
-    case 'tree':
+    case 'tree': {
+      const heroModel = args.model ?? 'gemini-3-pro-image';
+      const variantCount = args.variants ?? 1;
+      const refineSource = args.refine ? resolve(process.cwd(), args.refine) : undefined;
+      const prompt = refineSource ? treeRefinePrompt(args.notes ?? '') : treePrompt();
+
+      for (let i = 0; i < variantCount; i++) {
+        const suffix = variantCount > 1 ? `-${i + 1}` : '';
+        const staged = await generateToStaging(`tree${suffix}`, prompt, heroModel, refineSource);
+        if (!args.stageOnly && variantCount === 1) {
+          await finalizeAsset(
+            staged,
+            'public/assets/environment/tree.png',
+            'environment',
+            { width: 400, height: 500 },
+          );
+        } else {
+          console.log('  → review in staging/; promote when ready');
+        }
+      }
+      break;
+    }
     case 'environment': {
       const staged = await generateToStaging('tree', treePrompt(), model);
       await finalizeAsset(
@@ -135,25 +176,49 @@ async function runCategory(args: CliArgs): Promise<void> {
     }
     case 'person':
     case 'characters': {
-      const staged = await generateToStaging('person', personPrompt(), model);
-      await finalizeAsset(
-        staged,
-        'public/assets/characters/person.png',
-        'characters',
-        { width: 400, height: 200 },
-      );
+      const heroModel = args.model ?? 'gemini-3-pro-image';
+      const variantCount = args.variants ?? 1;
+      const refineSource = args.refine ? resolve(process.cwd(), args.refine) : undefined;
+      const prompt = refineSource
+        ? personRefinePrompt(args.notes ?? '')
+        : personPrompt();
+
+      for (let i = 0; i < variantCount; i++) {
+        const suffix = variantCount > 1 ? `-${i + 1}` : '';
+        const staged = await generateToStaging(
+          `person${suffix}`,
+          prompt,
+          heroModel,
+          refineSource,
+        );
+        if (!args.stageOnly && variantCount === 1) {
+          await finalizeAsset(
+            staged,
+            'public/assets/characters/person.png',
+            'characters',
+            { width: 400, height: 200 },
+          );
+        } else {
+          console.log('  → review in staging/; promote when ready');
+        }
+      }
       break;
     }
     case 'clouds': {
       const count = args.count ?? 5;
+      const batchModel = args.model ?? BATCH_MODEL;
       for (let i = 0; i < count; i++) {
-        const staged = await generateToStaging(`cloud-${i}`, cloudPrompt(i), model);
-        await finalizeAsset(
-          staged,
-          `public/assets/clouds/cloud-${i}.png`,
-          'clouds',
-          { width: 320, height: 180 },
-        );
+        const staged = await generateToStaging(`cloud-${i}`, cloudPrompt(i), batchModel);
+        if (!args.stageOnly) {
+          await finalizeAsset(
+            staged,
+            `public/assets/clouds/cloud-${i}.png`,
+            'clouds',
+            { width: 320, height: 180 },
+          );
+        } else {
+          console.log('  → review in staging/; promote when ready');
+        }
       }
       break;
     }
@@ -226,6 +291,7 @@ async function runPromote(args: CliArgs): Promise<void> {
     height: dims.height,
     category: basename(dirname(args.dest)),
   });
+  await archiveApprovedAsset(args.dest);
   console.log(`Promoted ${args.promote} → ${args.dest}`);
 }
 
