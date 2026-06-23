@@ -9,7 +9,13 @@ npm install
 npm run dev
 ```
 
-Open the URL shown in the terminal. Press `a`–`z` to show a thought bubble and transform a cloud into an animal.
+Open the URL shown in the terminal. Press **Start** on the menu to play. Press `a`–`z` to show a thought bubble and transform a cloud into an animal. Press **Ctrl+Q** during the game to return to the menu.
+
+## Credits
+
+Edit [`content/credits.md`](content/credits.md) to change what the Credits button displays. Save and refresh the browser to see updates.
+
+Running [`scripts/backup.ps1`](scripts/backup.ps1) before each GitHub push auto-increments **Version No.** in the credits file (and `package.json`).
 
 ## Build
 

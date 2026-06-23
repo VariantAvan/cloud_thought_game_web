@@ -1,12 +1,13 @@
 export type LetterKey = string;
 
-export type CloudState = 'drifting' | 'stopped' | 'animal';
+export type CloudState = 'drifting' | 'slowing' | 'animal' | 'accelerating';
 
 export interface Cloud {
   id: string;
   x: number;
   y: number;
   speed: number;
+  currentSpeed: number;
   variant: number;
   state: CloudState;
   animalLetter?: string;
@@ -37,6 +38,8 @@ export interface Size {
   width: number;
   height: number;
 }
+
+export type DogPose = 'sitting' | 'standingPanting' | 'running' | 'lying';
 
 export interface Point {
   x: number;

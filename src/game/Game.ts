@@ -2,6 +2,7 @@ import { GameLoop } from './GameLoop';
 import { SceneRenderer } from '../rendering/SceneRenderer';
 import { AssetLoader } from '../systems/AssetLoader';
 import { CloudManager } from '../systems/CloudManager';
+import { DogManager } from '../systems/DogManager';
 import { InputManager } from '../systems/InputManager';
 import { ThoughtBubble } from '../systems/ThoughtBubble';
 import type { Size } from '../types';
@@ -14,6 +15,7 @@ export class Game {
   private assets: AssetLoader;
   private scene: SceneRenderer;
   private clouds!: CloudManager;
+  private dog!: DogManager;
   private input: InputManager;
   private bubble: ThoughtBubble;
 
@@ -34,12 +36,14 @@ export class Game {
     );
 
     window.addEventListener('resize', this.onResize);
+    this.canvas.addEventListener('click', this.onCanvasClick);
   }
 
   async start(): Promise<void> {
     await this.assets.load();
     this.onResize();
     this.clouds = new CloudManager(this.assets, this.size.width, this.size.height);
+    this.dog = new DogManager(this.size.width, this.size.height);
 
     this.input.onLetter((letter) => {
       this.bubble.show(letter);
@@ -53,7 +57,15 @@ export class Game {
     this.loop.stop();
     this.input.stop();
     window.removeEventListener('resize', this.onResize);
+    this.canvas.removeEventListener('click', this.onCanvasClick);
   }
+
+  private onCanvasClick = (event: MouseEvent): void => {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    this.dog?.setClickTarget(x, y);
+  };
 
   private onResize = (): void => {
     const dpr = window.devicePixelRatio || 1;
@@ -68,11 +80,13 @@ export class Game {
     this.size = { width: w, height: h };
     if (this.clouds && prev.width > 0) {
       this.clouds.resize(w, h);
+      this.dog.resize(w, h);
     }
   };
 
   private update(deltaTime: number): void {
     this.clouds?.update(deltaTime);
+    this.dog?.update(deltaTime);
     this.bubble.update(deltaTime);
   }
 
@@ -83,6 +97,7 @@ export class Game {
     this.scene.renderSky(ctx, size);
     this.clouds?.render(ctx);
     this.scene.renderForeground(ctx, size);
+    this.dog?.render(ctx);
 
     const head = this.scene.getHeadPosition(size);
     this.bubble.render(ctx, head);

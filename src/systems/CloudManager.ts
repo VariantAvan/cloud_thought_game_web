@@ -1,8 +1,11 @@
 import {
+  ANIMAL_DISPLAY_DURATION,
   ANIMAL_SCALE_DURATION,
   CLOUD_COUNT,
   CLOUD_MAX_SPEED,
   CLOUD_MIN_SPEED,
+  CLOUD_SLOW_FACTOR,
+  CLOUD_SPEED_RAMP_DURATION,
   CLOUD_TRANSFORM_DELAY,
   LAYOUT,
 } from '../game/constants';
@@ -13,14 +16,16 @@ import type { AssetLoader } from './AssetLoader';
 
 let cloudIdCounter = 0;
 
-function createCloud(width: number, height: number, startX?: number): Cloud {
+function createCloud(_width: number, height: number, startX?: number): Cloud {
   const yRange = LAYOUT.skyCloudMaxY - LAYOUT.skyCloudMinY;
   const y = height * (LAYOUT.skyCloudMinY + Math.random() * yRange);
+  const speed = CLOUD_MIN_SPEED + Math.random() * (CLOUD_MAX_SPEED - CLOUD_MIN_SPEED);
   return {
     id: `cloud-${cloudIdCounter++}`,
     x: startX ?? -80 - Math.random() * 200,
     y,
-    speed: CLOUD_MIN_SPEED + Math.random() * (CLOUD_MAX_SPEED - CLOUD_MIN_SPEED),
+    speed,
+    currentSpeed: speed,
     variant: Math.floor(Math.random() * CLOUD_COUNT),
     state: 'drifting',
     stopTimer: 0,
@@ -75,10 +80,26 @@ export class CloudManager {
       }
     }
 
-    nearest.state = 'stopped';
+    nearest.state = 'slowing';
     nearest.animalLetter = letter;
     nearest.stopTimer = CLOUD_TRANSFORM_DELAY;
     nearest.animalScale = 0;
+    nearest.currentSpeed = nearest.speed * CLOUD_SLOW_FACTOR;
+  }
+
+  private wrapCloud(cloud: Cloud): void {
+    if (cloud.x > this.width + 120) {
+      cloud.x = -120;
+      cloud.y =
+        this.height *
+        (LAYOUT.skyCloudMinY +
+          Math.random() * (LAYOUT.skyCloudMaxY - LAYOUT.skyCloudMinY));
+      cloud.speed =
+        CLOUD_MIN_SPEED + Math.random() * (CLOUD_MAX_SPEED - CLOUD_MIN_SPEED);
+      if (cloud.state === 'drifting') {
+        cloud.currentSpeed = cloud.speed;
+      }
+    }
   }
 
   update(deltaTime: number): void {
@@ -86,26 +107,42 @@ export class CloudManager {
       cloud.wobblePhase += deltaTime * 1.5;
 
       if (cloud.state === 'drifting') {
-        cloud.x += cloud.speed * deltaTime;
-        if (cloud.x > this.width + 120) {
-          cloud.x = -120;
-          cloud.y =
-            this.height *
-            (LAYOUT.skyCloudMinY +
-              Math.random() * (LAYOUT.skyCloudMaxY - LAYOUT.skyCloudMinY));
-          cloud.speed =
-            CLOUD_MIN_SPEED + Math.random() * (CLOUD_MAX_SPEED - CLOUD_MIN_SPEED);
-        }
-      } else if (cloud.state === 'stopped') {
+        cloud.currentSpeed = cloud.speed;
+        cloud.x += cloud.currentSpeed * deltaTime;
+        this.wrapCloud(cloud);
+      } else if (cloud.state === 'slowing') {
+        cloud.x += cloud.currentSpeed * deltaTime;
+        this.wrapCloud(cloud);
         cloud.stopTimer -= deltaTime;
         if (cloud.stopTimer <= 0) {
           cloud.state = 'animal';
+          cloud.stopTimer = ANIMAL_DISPLAY_DURATION;
         }
       } else if (cloud.state === 'animal') {
+        cloud.x += cloud.currentSpeed * deltaTime;
+        this.wrapCloud(cloud);
         cloud.animalScale = Math.min(
           1,
           cloud.animalScale + deltaTime / ANIMAL_SCALE_DURATION,
         );
+        cloud.stopTimer -= deltaTime;
+        if (cloud.stopTimer <= 0) {
+          cloud.state = 'accelerating';
+          cloud.stopTimer = CLOUD_SPEED_RAMP_DURATION;
+        }
+      } else if (cloud.state === 'accelerating') {
+        const progress = 1 - cloud.stopTimer / CLOUD_SPEED_RAMP_DURATION;
+        const slowSpeed = cloud.speed * CLOUD_SLOW_FACTOR;
+        cloud.currentSpeed = slowSpeed + (cloud.speed - slowSpeed) * progress;
+        cloud.x += cloud.currentSpeed * deltaTime;
+        this.wrapCloud(cloud);
+        cloud.stopTimer -= deltaTime;
+        if (cloud.stopTimer <= 0) {
+          cloud.state = 'drifting';
+          cloud.currentSpeed = cloud.speed;
+          cloud.animalLetter = undefined;
+          cloud.animalScale = 0;
+        }
       }
     }
   }
@@ -121,8 +158,7 @@ export class CloudManager {
   }
 
   private renderCloud(ctx: CanvasRenderingContext2D, cloud: Cloud): void {
-    const wobble =
-      cloud.state === 'drifting' ? Math.sin(cloud.wobblePhase) * 3 : 0;
+    const wobble = Math.sin(cloud.wobblePhase) * 3;
     const path = `/assets/clouds/cloud-${cloud.variant}.png`;
     const img = this.assets.getImage(path);
     const scale = Math.min(this.width, this.height) * 0.12;

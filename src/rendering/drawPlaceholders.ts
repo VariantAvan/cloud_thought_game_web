@@ -1,3 +1,5 @@
+import type { DogPose } from '../types';
+
 export function drawCloud(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -164,4 +166,100 @@ function roundRect(
   ctx.lineTo(x, y + r);
   ctx.quadraticCurveTo(x, y, x + r, y);
   ctx.closePath();
+}
+
+export function drawDog(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  pose: DogPose,
+  facingRight: boolean,
+  animPhase: number,
+): void {
+  ctx.save();
+  ctx.translate(x, y);
+  if (!facingRight) ctx.scale(-1, 1);
+
+  const body = '#c68642';
+  const dark = '#8b5a2b';
+  const legSwing = Math.sin(animPhase * 12) * size * 0.08;
+
+  if (pose === 'lying') {
+    ctx.fillStyle = body;
+    roundRect(ctx, -size * 0.55, -size * 0.12, size * 1.1, size * 0.22, size * 0.1);
+    ctx.fill();
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.arc(size * 0.45, -size * 0.02, size * 0.14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.moveTo(size * 0.52, size * 0.02);
+    ctx.lineTo(size * 0.62, size * 0.08);
+    ctx.lineTo(size * 0.5, size * 0.06);
+    ctx.fill();
+    ctx.fillStyle = '#e8a0a0';
+    ctx.beginPath();
+    ctx.arc(-size * 0.5, -size * 0.08, size * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  if (pose === 'sitting') {
+    ctx.fillStyle = body;
+    roundRect(ctx, -size * 0.2, -size * 0.35, size * 0.4, size * 0.35, size * 0.08);
+    ctx.fill();
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.arc(size * 0.12, -size * 0.42, size * 0.16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(-size * 0.08, -size * 0.05, size * 0.1, size * 0.18);
+    ctx.fillRect(size * 0.02, -size * 0.05, size * 0.1, size * 0.18);
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.arc(-size * 0.18, -size * 0.12, size * 0.07, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  if (pose === 'standingPanting') {
+    ctx.fillStyle = body;
+    roundRect(ctx, -size * 0.18, -size * 0.42, size * 0.36, size * 0.38, size * 0.08);
+    ctx.fill();
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.arc(size * 0.14, -size * 0.52, size * 0.17, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(-size * 0.1, -size * 0.08, size * 0.09, size * 0.22);
+    ctx.fillRect(size * 0.04, -size * 0.08, size * 0.09, size * 0.22);
+    const tongueOut = size * 0.06 + Math.sin(animPhase * 8) * size * 0.02;
+    ctx.fillStyle = '#e8a0a0';
+    ctx.beginPath();
+    ctx.ellipse(size * 0.2, -size * 0.38 + tongueOut, size * 0.05, size * 0.08, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  // running
+  ctx.fillStyle = body;
+  roundRect(ctx, -size * 0.22, -size * 0.28, size * 0.44, size * 0.26, size * 0.07);
+  ctx.fill();
+  ctx.fillStyle = dark;
+  ctx.beginPath();
+  ctx.arc(size * 0.16, -size * 0.34, size * 0.15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = body;
+  ctx.fillRect(-size * 0.12, -size * 0.02 + legSwing, size * 0.08, size * 0.16);
+  ctx.fillRect(size * 0.06, -size * 0.02 - legSwing, size * 0.08, size * 0.16);
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.28, -size * 0.18);
+  ctx.quadraticCurveTo(-size * 0.42, -size * 0.28 + legSwing * 0.5, -size * 0.38, -size * 0.08);
+  ctx.lineWidth = size * 0.05;
+  ctx.strokeStyle = body;
+  ctx.stroke();
+  ctx.restore();
 }

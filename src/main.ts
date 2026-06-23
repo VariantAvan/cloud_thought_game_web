@@ -1,11 +1,4 @@
-import { Game } from './game/Game';
+import './styles/menu.css';
+import { App } from './app/App';
 
-const canvas = document.getElementById('game');
-if (!(canvas instanceof HTMLCanvasElement)) {
-  throw new Error('Canvas element #game not found');
-}
-
-const game = new Game(canvas);
-game.start().catch((err) => {
-  console.error('Failed to start game:', err);
-});
+new App();
